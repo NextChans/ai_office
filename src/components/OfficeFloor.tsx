@@ -177,6 +177,7 @@ export function OfficeFloor({
           height={BOARD_H}
           viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}
           className="absolute left-0 top-0"
+          shapeRendering="crispEdges"
         >
           <defs>
             <linearGradient id="wallL" x1="0" y1="0" x2="0" y2="1">
@@ -343,36 +344,36 @@ function Character({
       )}
 
       <span className="bob block">
-        <svg width="52" height="62" viewBox="0 0 52 62">
+        {/* Blocky, Minecraft-style character (hard pixel edges) */}
+        <svg width="52" height="62" viewBox="0 0 52 62" shapeRendering="crispEdges">
           {/* shadow */}
-          <ellipse cx="26" cy="58" rx="15" ry="4.5" fill="#000" opacity="0.28" />
+          <rect x="13" y="56" width="26" height="5" fill="#000" opacity="0.25" />
           {/* legs */}
-          <rect x="19" y="46" width="6" height="11" rx="3" fill={dark} />
-          <rect x="27" y="46" width="6" height="11" rx="3" fill={dark} />
-          {/* body */}
-          <path
-            d="M16 50 Q16 32 26 32 Q36 32 36 50 Q36 53 33 53 L19 53 Q16 53 16 50 Z"
-            fill={shirt}
-          />
+          <rect x="19" y="47" width="6" height="10" fill={dark} />
+          <rect x="27" y="47" width="6" height="10" fill={dark} />
+          {/* body (block torso) */}
+          <rect x="16" y="32" width="20" height="17" fill={shirt} />
+          <rect x="16" y="32" width="20" height="3" fill="#ffffff" opacity="0.14" />
           {/* arms */}
-          <ellipse cx="15" cy="42" rx="4" ry="6.5" fill={shirt} />
-          <ellipse cx="37" cy="42" rx="4" ry="6.5" fill={shirt} />
-          {/* head */}
-          <circle
-            cx="26"
-            cy="20"
-            r="15"
-            fill="#ffe0bd"
-            stroke={selected ? "#7c6cff" : "rgba(0,0,0,0.15)"}
-            strokeWidth={selected ? 2.5 : 1}
+          <rect x="11" y="33" width="5" height="13" fill={dark} />
+          <rect x="36" y="33" width="5" height="13" fill={dark} />
+          {/* head (square block) */}
+          <rect
+            x="13"
+            y="6"
+            width="26"
+            height="26"
+            fill="#ffd9a8"
+            stroke={selected ? "var(--accent)" : "var(--ink)"}
+            strokeWidth={selected ? 3 : 2}
           />
           {/* face = chosen avatar emoji */}
-          <text x="26" y="26" fontSize="17" textAnchor="middle">
+          <text x="26" y="27" fontSize="16" textAnchor="middle">
             {agent.avatar}
           </text>
           {/* CEO crown */}
           {agent.role === "CEO" && (
-            <text x="26" y="6" fontSize="13" textAnchor="middle">
+            <text x="26" y="5" fontSize="13" textAnchor="middle">
               👑
             </text>
           )}
