@@ -4,8 +4,11 @@ import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useOffice } from "@/lib/store";
 import { StatusPill } from "@/components/StatusPill";
+import { Badge } from "@/components/ui";
 import { toast } from "@/components/ui/toast";
-import type { Department, Role } from "@/lib/types";
+import { evaluatePersona as aiEvaluate } from "@/lib/ai/client";
+import type { PersonaEval } from "@/lib/ai/tasks";
+import type { Application, Department, Persona, Role } from "@/lib/types";
 
 type Tab = "apply" | "review";
 
@@ -57,67 +60,130 @@ export default function HiringPage() {
             const p = personaById(app.personaId);
             if (!p) return null;
             return (
-              <div
+              <ApplicationRow
                 key={app.id}
-                className="flex flex-col gap-3 rounded-2xl border border-border bg-panel p-5 md:flex-row md:items-center md:justify-between"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="grid h-11 w-11 place-items-center rounded-full bg-panel-2 text-xl">
-                    {p.avatar}
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{p.name}</span>
-                      <span className="text-xs text-muted">@{p.ownerName}</span>
-                      <StatusPill status={appStatusToPill(app.status)} />
-                    </div>
-                    <p className="text-sm text-muted">{p.tagline}</p>
-                    <p className="mt-1 text-xs text-muted">
-                      {app.department} 지원 · “{app.message || "동기 미작성"}”
-                    </p>
-                    {p.skills.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {p.skills.map((s) => (
-                          <span
-                            key={s}
-                            className="rounded-full border border-border bg-panel-2 px-2 py-0.5 text-[11px] text-muted"
-                          >
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {app.status === "pending" && (
-                  <div className="flex shrink-0 gap-2">
-                    <button
-                      onClick={() => {
-                        decideApplication(app.id, "hired");
-                        toast.success(`${p.name}님을 채용했습니다! 오피스에 합류합니다 🎉`);
-                      }}
-                      className="rounded-lg bg-accent-2/20 px-3 py-1.5 text-sm text-accent-2"
-                    >
-                      채용
-                    </button>
-                    <button
-                      onClick={() => {
-                        decideApplication(app.id, "rejected");
-                        toast.info(`${p.name}님의 지원을 보류했습니다.`);
-                      }}
-                      className="rounded-lg bg-danger/20 px-3 py-1.5 text-sm text-danger"
-                    >
-                      불합격
-                    </button>
-                  </div>
-                )}
-              </div>
+                app={app}
+                persona={p}
+                onHire={() => {
+                  decideApplication(app.id, "hired");
+                  toast.success(`${p.name}님을 채용했습니다! 오피스에 합류합니다 🎉`);
+                }}
+                onReject={() => {
+                  decideApplication(app.id, "rejected");
+                  toast.info(`${p.name}님의 지원을 보류했습니다.`);
+                }}
+              />
             );
           })}
         </div>
       )}
 
       {tab === "apply" && <ApplyForm companyId={id} onApplied={() => setTab("review")} />}
+    </div>
+  );
+}
+
+function ApplicationRow({
+  app,
+  persona,
+  onHire,
+  onReject,
+}: {
+  app: Application;
+  persona: Persona;
+  onHire: () => void;
+  onReject: () => void;
+}) {
+  const [evalResult, setEvalResult] = useState<PersonaEval | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const runEval = async () => {
+    setLoading(true);
+    try {
+      const r = await aiEvaluate({
+        name: persona.name,
+        tagline: persona.tagline,
+        skills: persona.skills,
+        department: app.department,
+        message: app.message,
+      });
+      setEvalResult(r);
+    } catch {
+      toast.error("AI 평가에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-panel p-5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-panel-2 text-xl">
+            {persona.avatar}
+          </span>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">{persona.name}</span>
+              <span className="text-xs text-muted">@{persona.ownerName}</span>
+              <StatusPill status={appStatusToPill(app.status)} />
+            </div>
+            <p className="text-sm text-muted">{persona.tagline}</p>
+            <p className="mt-1 text-xs text-muted">
+              {app.department} 지원 · “{app.message || "동기 미작성"}”
+            </p>
+            {persona.skills.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {persona.skills.map((s) => (
+                  <span
+                    key={s}
+                    className="rounded-full border border-border bg-panel-2 px-2 py-0.5 text-[11px] text-muted"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        {app.status === "pending" && (
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <button
+              onClick={runEval}
+              disabled={loading}
+              className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 text-sm text-accent focus-ring disabled:opacity-60"
+            >
+              {loading ? "평가 중…" : "🤖 AI 평가"}
+            </button>
+            <button
+              onClick={onHire}
+              className="rounded-lg bg-accent-2/20 px-3 py-1.5 text-sm text-accent-2 focus-ring"
+            >
+              채용
+            </button>
+            <button
+              onClick={onReject}
+              className="rounded-lg bg-danger/20 px-3 py-1.5 text-sm text-danger focus-ring"
+            >
+              불합격
+            </button>
+          </div>
+        )}
+      </div>
+
+      {evalResult && (
+        <div className="rounded-xl border border-accent/30 bg-accent/5 p-3">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="font-semibold text-accent">AI 평가</span>
+            <Badge tone="accent">{evalResult.score}점</Badge>
+            <Badge tone={evalResult.score >= 70 ? "success" : "warn"}>
+              {evalResult.verdict}
+            </Badge>
+            {!evalResult.fromAI && <Badge tone="neutral">휴리스틱</Badge>}
+          </div>
+          <p className="mt-1.5 text-xs text-muted">{evalResult.summary}</p>
+        </div>
+      )}
     </div>
   );
 }

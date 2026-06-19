@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOffice } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
+import { useAuth } from "@/lib/auth";
 import { toast } from "@/components/ui/toast";
 
 const AVATARS = ["🧭", "🚀", "🦁", "🦊", "🐯", "🦅", "🧠", "⚡", "🌐", "💎"];
@@ -111,12 +112,18 @@ function CreateCompany({
   avatars: string[];
 }) {
   const createCompany = useOffice((s) => s.createCompany);
+  const { user } = useAuth();
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("");
   const [mission, setMission] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [ceoName, setCeoName] = useState("");
   const [ceoAvatar, setCeoAvatar] = useState(avatars[0]);
+
+  // Prefill the founder with the signed-in user's name when available.
+  useEffect(() => {
+    if (user && !ownerName) setOwnerName(user.name);
+  }, [user, ownerName]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();

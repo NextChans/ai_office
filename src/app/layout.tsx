@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { NavBar } from "@/components/NavBar";
 import { Toaster } from "@/components/ui/toast";
+import { CloudSync } from "@/components/CloudSync";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://ai-office-seven.vercel.app"),
@@ -33,6 +34,7 @@ export default function RootLayout({
         <NavBar />
         <main className="mx-auto max-w-7xl px-4 pb-20 pt-6">{children}</main>
         <Toaster />
+        <CloudSync />
       </body>
     </html>
   );
