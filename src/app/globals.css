@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0a0a12;
+  --bg-soft: #12121f;
+  --panel: #181826;
+  --panel-2: #1f2030;
+  --border: #2a2b40;
+  --text: #e7e8f0;
+  --muted: #9396b3;
+  --accent: #7c6cff;
+  --accent-2: #38e8c6;
+  --warn: #ffb13d;
+  --danger: #ff5d6c;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-soft: var(--bg-soft);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(124, 108, 255, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(124, 108, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 108, 255, 0);
+  }
+}
+
+.bob {
+  animation: float 3s ease-in-out infinite;
+}
+
+.glass {
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
