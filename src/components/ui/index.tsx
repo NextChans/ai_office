@@ -9,11 +9,11 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success";
 type ButtonSize = "sm" | "md";
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: "bg-accent text-white hover:-translate-y-0.5",
-  secondary: "border border-border bg-panel-2 text-text hover:bg-panel",
+  primary: "pixel-btn bg-accent text-ink",
+  secondary: "pixel-btn bg-panel-2 text-text",
   ghost: "text-muted hover:bg-panel-2 hover:text-text",
-  danger: "bg-danger/20 text-danger hover:bg-danger/30",
-  success: "bg-accent-2/20 text-accent-2 hover:bg-accent-2/30",
+  danger: "pixel-btn bg-danger text-white",
+  success: "pixel-btn bg-accent-2 text-ink",
 };
 const SIZE: Record<ButtonSize, string> = {
   sm: "px-3 py-1.5 text-xs",
@@ -32,7 +32,7 @@ export function Button({
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-xl font-medium transition-all focus-ring disabled:cursor-not-allowed disabled:opacity-50 ${VARIANT[variant]} ${SIZE[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 font-medium focus-ring disabled:cursor-not-allowed disabled:opacity-50 ${VARIANT[variant]} ${SIZE[size]} ${className}`}
     />
   );
 }
@@ -47,7 +47,7 @@ export function Card({
   return (
     <div
       {...props}
-      className={`rounded-2xl border border-border bg-panel ${className}`}
+      className={`pixel-panel bg-panel ${className}`}
     />
   );
 }
@@ -138,8 +138,8 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl border border-border bg-panel p-6 shadow-2xl"
-        style={{ animation: "pop-in 0.2s ease" }}
+        className="pixel-panel w-full max-w-md bg-panel p-6 shadow-2xl"
+        style={{ animation: "pop-in 0.12s steps(2)" }}
       >
         {title && (
           <div className="mb-4 flex items-center justify-between">
