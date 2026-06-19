@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useOffice } from "@/lib/store";
 import { StatusPill } from "@/components/StatusPill";
+import { toast } from "@/components/ui/toast";
 import type { Department, Role } from "@/lib/types";
 
 type Tab = "apply" | "review";
@@ -91,13 +92,19 @@ export default function HiringPage() {
                 {app.status === "pending" && (
                   <div className="flex shrink-0 gap-2">
                     <button
-                      onClick={() => decideApplication(app.id, "hired")}
+                      onClick={() => {
+                        decideApplication(app.id, "hired");
+                        toast.success(`${p.name}님을 채용했습니다! 오피스에 합류합니다 🎉`);
+                      }}
                       className="rounded-lg bg-accent-2/20 px-3 py-1.5 text-sm text-accent-2"
                     >
                       채용
                     </button>
                     <button
-                      onClick={() => decideApplication(app.id, "rejected")}
+                      onClick={() => {
+                        decideApplication(app.id, "rejected");
+                        toast.info(`${p.name}님의 지원을 보류했습니다.`);
+                      }}
                       className="rounded-lg bg-danger/20 px-3 py-1.5 text-sm text-danger"
                     >
                       불합격
@@ -150,6 +157,7 @@ function ApplyForm({
       role: "Member" as Role,
       message,
     });
+    toast.success(`${name} 지원서를 제출했습니다. 검토를 기다려 주세요!`);
     setName("");
     setTagline("");
     setSkills("");

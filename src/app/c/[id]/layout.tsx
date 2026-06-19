@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useOffice } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
+import { Button, Modal, TextInput } from "@/components/ui";
+import { toast } from "@/components/ui/toast";
 
 const TABS = [
   { seg: "office", label: "오피스", icon: "🏙️" },
@@ -86,12 +88,15 @@ export default function CompanyLayout({
               👑 {ceo ? ceo.name : "공석"} · 설립자 {company.ownerName}
             </p>
           </div>
-          <Link
-            href="/companies"
-            className="rounded-lg border border-border bg-panel-2 px-3 py-1.5 text-xs text-muted transition-colors hover:text-text"
-          >
-            ← 회사 나가기
-          </Link>
+          <div className="flex items-center gap-2">
+            <CompanySettings companyId={company.id} />
+            <Link
+              href="/companies"
+              className="rounded-lg border border-border bg-panel-2 px-3 py-1.5 text-xs text-muted transition-colors hover:text-text focus-ring"
+            >
+              ← 회사 나가기
+            </Link>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2 text-xs">
@@ -125,6 +130,128 @@ export default function CompanyLayout({
 
       {children}
     </div>
+  );
+}
+
+function CompanySettings({ companyId }: { companyId: string }) {
+  const router = useRouter();
+  const companies = useOffice((s) => s.companies);
+  const updateCompany = useOffice((s) => s.updateCompany);
+  const deleteCompany = useOffice((s) => s.deleteCompany);
+  const company = companies.find((c) => c.id === companyId);
+
+  const [open, setOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [name, setName] = useState("");
+  const [mission, setMission] = useState("");
+  const [industry, setIndustry] = useState("");
+
+  const openModal = () => {
+    if (!company) return;
+    setName(company.name);
+    setMission(company.mission);
+    setIndustry(company.industry ?? "");
+    setConfirmDelete(false);
+    setOpen(true);
+  };
+
+  if (!company) return null;
+
+  return (
+    <>
+      <button
+        onClick={openModal}
+        className="rounded-lg border border-border bg-panel-2 px-3 py-1.5 text-xs text-muted transition-colors hover:text-text focus-ring"
+        title="회사 설정"
+      >
+        ⚙️ 설정
+      </button>
+
+      <Modal open={open} onClose={() => setOpen(false)} title="회사 설정">
+        <div className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="text-muted">회사명</span>
+            <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="text-muted">산업 분야</span>
+            <TextInput
+              value={industry}
+              onChange={(e) => setIndustry(e.target.value)}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="text-muted">미션</span>
+            <TextInput
+              value={mission}
+              onChange={(e) => setMission(e.target.value)}
+            />
+          </label>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
+              취소
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                updateCompany(companyId, {
+                  name: name.trim() || company.name,
+                  mission: mission.trim(),
+                  industry: industry.trim(),
+                });
+                toast.success("회사 정보를 저장했습니다.");
+                setOpen(false);
+              }}
+            >
+              저장
+            </Button>
+          </div>
+
+          <div className="mt-2 border-t border-border pt-4">
+            {company.isDemo ? (
+              <p className="text-xs text-muted">
+                데모 회사는 삭제할 수 없습니다. 직접 만든 회사는 삭제할 수 있어요.
+              </p>
+            ) : !confirmDelete ? (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setConfirmDelete(true)}
+              >
+                회사 삭제
+              </Button>
+            ) : (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-danger">
+                  정말 삭제할까요? 직원·이사회 기록이 모두 사라집니다.
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setConfirmDelete(false)}
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      deleteCompany(companyId);
+                      toast.info("회사를 삭제했습니다.");
+                      router.push("/companies");
+                    }}
+                  >
+                    삭제 확정
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 }
 
