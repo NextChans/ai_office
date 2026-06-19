@@ -73,7 +73,7 @@ export function Badge({
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${tones[tone]} ${className}`}
+      className={`inline-flex items-center gap-1 border-2 px-2 py-0.5 text-[11px] ${tones[tone]} ${className}`}
     >
       {children}
     </span>
@@ -95,7 +95,7 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="col-span-full flex flex-col items-center rounded-2xl border border-dashed border-border bg-panel/40 px-6 py-12 text-center">
+    <div className="col-span-full flex flex-col items-center border-2 border-dashed border-border bg-panel/40 px-6 py-12 text-center">
       <div className="mb-3 text-4xl opacity-80">{icon}</div>
       <p className="font-medium">{title}</p>
       {description && (
@@ -169,7 +169,7 @@ export function TextInput(
   return (
     <input
       {...rest}
-      className={`w-full rounded-lg border border-border bg-panel-2 px-3 py-2.5 text-sm outline-none transition-colors focus:border-accent ${className}`}
+      className={`pixel-input w-full px-3 py-2.5 text-sm outline-none ${className}`}
     />
   );
 }

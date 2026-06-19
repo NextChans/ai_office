@@ -26,18 +26,19 @@ const features = [
 export default function Home() {
   return (
     <div className="flex flex-col gap-16">
-      <section className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-panel to-bg-soft px-6 py-16 text-center md:py-24">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-accent/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-accent-2/10 blur-3xl" />
-        <p className="mb-4 inline-block rounded-full border border-border bg-panel-2 px-3 py-1 text-xs text-muted">
+      <section className="pixel-panel relative overflow-hidden bg-bg-soft px-6 py-16 text-center md:py-24">
+        {/* flat pixel sky decoration (no gradients/blur) */}
+        <div className="pointer-events-none absolute right-6 top-6 h-4 w-4 bg-accent-2/70" />
+        <div className="pointer-events-none absolute right-12 top-10 h-3 w-3 bg-accent-2/50" />
+        <div className="pointer-events-none absolute left-8 top-8 h-3 w-3 bg-warn/60" />
+        <div className="pointer-events-none absolute bottom-8 left-1/4 h-3 w-3 bg-accent/50" />
+        <p className="mb-4 inline-block border-2 border-ink bg-panel-2 px-3 py-1 text-xs text-muted">
           메타버스 × AI · 2.5D 오피스 플랫폼
         </p>
         <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-tight md:text-6xl">
           AI로 구성되는
           <br />
-          <span className="bg-gradient-to-r from-accent to-accent-2 bg-clip-text text-transparent">
-            가상의 회사
-          </span>
+          <span className="text-accent">가상의 회사</span>
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-base text-muted md:text-lg">
           AI 페르소나로 지원하고, 채용된 에이전트가 2.5D 오피스에서 협업합니다.

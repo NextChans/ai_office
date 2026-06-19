@@ -7,13 +7,14 @@ import { useOffice } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { Button, Modal, TextInput } from "@/components/ui";
 import { toast } from "@/components/ui/toast";
+import { PixelIcon } from "@/components/PixelIcon";
 
 const TABS = [
-  { seg: "office", label: "오피스", icon: "🏙️" },
-  { seg: "hiring", label: "채용", icon: "🧬" },
-  { seg: "employees", label: "직원", icon: "🤖" },
-  { seg: "board", label: "이사회", icon: "🏛️" },
-];
+  { seg: "office", label: "오피스", icon: "office" },
+  { seg: "hiring", label: "채용", icon: "hiring" },
+  { seg: "employees", label: "직원", icon: "employees" },
+  { seg: "board", label: "이사회", icon: "board" },
+] as const;
 
 export default function CompanyLayout({
   children,
@@ -121,7 +122,7 @@ export default function CompanyLayout({
                   : "text-muted hover:bg-panel-2 hover:text-text"
               }`}
             >
-              <span>{t.icon}</span>
+              <PixelIcon name={t.icon} />
               {t.label}
             </Link>
           );

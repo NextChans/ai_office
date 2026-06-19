@@ -157,6 +157,22 @@ export function OfficeFloor({
     return () => clearInterval(t);
   }, []);
 
+  // Scale the fixed-size board to fit narrow viewports (mobile) — no scroll.
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const update = () => {
+      const avail = el.clientWidth - 24; // account for padding
+      setScale(Math.min(1, Math.max(0.4, avail / BOARD_W)));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const tiles = useMemo(() => {
     const list: { x: number; y: number }[] = [];
     for (let y = 0; y < GRID_H; y++)
@@ -169,8 +185,23 @@ export function OfficeFloor({
   const leftCorner = { x: cx(0, GRID_H - 1) - H, y: cy(0, GRID_H - 1) };
 
   return (
-    <div className="relative overflow-auto rounded-2xl border border-border bg-gradient-to-b from-[#15131f] to-[#0d0c14] p-6">
-      <div className="relative mx-auto" style={{ width: BOARD_W, height: BOARD_H }}>
+    <div
+      ref={frameRef}
+      className="pixel-panel relative overflow-hidden bg-[#13111a] p-3 md:p-6"
+    >
+      <div
+        className="relative mx-auto"
+        style={{ width: BOARD_W * scale, height: BOARD_H * scale }}
+      >
+        <div
+          className="relative"
+          style={{
+            width: BOARD_W,
+            height: BOARD_H,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
+        >
         {/* ---- Static room: walls, floor, furniture (one SVG) ---- */}
         <svg
           width={BOARD_W}
@@ -232,19 +263,27 @@ export function OfficeFloor({
             );
           })}
 
-          {/* Floor tiles */}
+          {/* Floor tiles — each rendered as a beveled block (base + lighter top) */}
           {tiles.map(({ x, y }) => {
             const zone = zoneFor(x, y);
-            const fill = zone ? zone.carpet : (x + y) % 2 === 0 ? "#1b1a28" : "#181725";
+            const base = zone ? zone.carpet : (x + y) % 2 === 0 ? "#262433" : "#201e2b";
+            const top = shade(base, 0.22);
             const ccx = cx(x, y);
             const ccy = cy(x, y);
+            const iw = H * 0.82;
+            const ih = Q * 0.82;
             return (
-              <polygon
-                key={`${x}-${y}`}
-                points={`${ccx},${ccy - Q} ${ccx + H},${ccy} ${ccx},${ccy + Q} ${ccx - H},${ccy}`}
-                fill={fill}
-                stroke="rgba(255,255,255,0.045)"
-              />
+              <g key={`${x}-${y}`}>
+                <polygon
+                  points={`${ccx},${ccy - Q} ${ccx + H},${ccy} ${ccx},${ccy + Q} ${ccx - H},${ccy}`}
+                  fill={shade(base, -0.25)}
+                  stroke="rgba(0,0,0,0.35)"
+                />
+                <polygon
+                  points={`${ccx},${ccy - ih} ${ccx + iw},${ccy} ${ccx},${ccy + ih} ${ccx - iw},${ccy}`}
+                  fill={top}
+                />
+              </g>
             );
           })}
 
@@ -269,7 +308,7 @@ export function OfficeFloor({
           return (
             <div
               key={z.dept}
-              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/35 px-2 py-0.5 text-[10px] font-medium text-white/70 backdrop-blur-sm"
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 border-2 border-ink bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white/80"
               style={{ left: cx(mx, my), top: cy(mx, my) }}
             >
               {z.label}
@@ -289,6 +328,7 @@ export function OfficeFloor({
               onSelect={() => onSelect(agent.id)}
             />
           ))}
+        </div>
       </div>
 
       {/* Legend */}
@@ -395,32 +435,40 @@ function Character({
 // ===========================================================================
 // Furniture sprites (origin = base centre of the tile, +y is down)
 // ===========================================================================
+// All furniture is drawn with rects/polygons only (no curves) so it stays
+// crisp and blocky under shape-rendering: crispEdges.
+function BlockChair({ x = 0, y = 0 }: { x?: number; y?: number }) {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {/* seat (iso top) */}
+      <polygon points="0,-6 10,0 0,6 -10,0" fill="#46485f" />
+      <polygon points="-10,0 0,6 0,12 -10,6" fill="#2c2d40" />
+      <polygon points="10,0 0,6 0,12 10,6" fill="#37384d" />
+      {/* backrest block */}
+      <rect x="-4" y="-18" width="8" height="13" fill="#46485f" />
+      <rect x="-4" y="-18" width="8" height="3" fill="#5a5c75" />
+    </g>
+  );
+}
+
 function Desk({ tint }: { tint: string }) {
-  const top = "#6b5234";
+  const top = "#7a5f3c";
   const left = "#4c3a25";
   const right = "#5a4530";
   return (
     <g>
-      {/* chair (behind) */}
-      <g transform="translate(0,-26)">
-        <polygon points="0,-7 11,0 0,7 -11,0" fill="#3a3b50" />
-        <polygon points="-11,0 0,7 0,14 -11,7" fill="#2c2d40" />
-        <polygon points="11,0 0,7 0,14 11,7" fill="#33344a" />
-        <rect x="-3" y="-20" width="7" height="14" rx="2" fill="#3a3b50" />
-      </g>
-      {/* desk top */}
+      <BlockChair y={-26} />
+      {/* desk top (iso slab) */}
       <polygon points="0,-24 28,-10 0,4 -28,-10" fill={top} />
       <polygon points="-28,-10 0,4 0,16 -28,2" fill={left} />
       <polygon points="28,-10 0,4 0,16 28,2" fill={right} />
-      {/* monitor */}
-      <g transform="translate(-7,-16)">
-        <polygon points="0,-13 12,-7 12,2 0,-4" fill="#15151f" />
-        <polygon points="0,-11 10,-6 10,0 0,-5" fill={tint} opacity="0.85" />
-        <polygon points="3,-3 6,-1.5 6,2 3,0.5" fill="#222" />
-      </g>
-      {/* coffee cup */}
-      <ellipse cx="13" cy="-8" rx="3.2" ry="1.8" fill="#d9b38c" />
-      <rect x="9.8" y="-9" width="6.4" height="3.5" rx="1.5" fill="#e8c9a0" />
+      {/* monitor (block) */}
+      <rect x="-13" y="-30" width="16" height="12" fill="#15151f" />
+      <rect x="-11" y="-28" width="12" height="8" fill={tint} />
+      <rect x="-3" y="-18" width="2" height="4" fill="#15151f" />
+      {/* keyboard + cup (pixels) */}
+      <rect x="4" y="-13" width="10" height="4" fill="#2a2a38" />
+      <rect x="16" y="-15" width="5" height="6" fill="#e8c9a0" />
     </g>
   );
 }
@@ -428,25 +476,16 @@ function Desk({ tint }: { tint: string }) {
 function MeetingTable() {
   return (
     <g>
-      {/* table */}
-      <ellipse cx="0" cy="-6" rx="40" ry="20" fill="#5a4530" />
-      <ellipse cx="0" cy="-9" rx="40" ry="20" fill="#6b5234" />
-      <ellipse cx="0" cy="-9" rx="33" ry="15" fill="#7a5f3c" />
+      {/* slab */}
+      <polygon points="0,-18 40,-2 0,14 -40,-2" fill="#7a5f3c" />
+      <polygon points="-40,-2 0,14 0,22 -40,6" fill="#4c3a25" />
+      <polygon points="40,-2 0,14 0,22 40,6" fill="#5a4530" />
       {/* chairs around */}
-      {[
-        [-40, -10],
-        [40, -10],
-        [-22, -22],
-        [22, -22],
-        [-22, 6],
-        [22, 6],
-      ].map(([dx, dy], i) => (
-        <g key={i} transform={`translate(${dx},${dy})`}>
-          <polygon points="0,-6 9,0 0,6 -9,0" fill="#3a3b50" />
-          <polygon points="-9,0 0,6 0,12 -9,6" fill="#2c2d40" />
-          <polygon points="9,0 0,6 0,12 9,6" fill="#33344a" />
-        </g>
-      ))}
+      {([[-40, -2], [40, -2], [-22, -16], [22, -16], [-22, 10], [22, 10]] as [number, number][]).map(
+        ([dx, dy], i) => (
+          <BlockChair key={i} x={dx} y={dy} />
+        )
+      )}
     </g>
   );
 }
@@ -454,15 +493,15 @@ function MeetingTable() {
 function Sofa() {
   return (
     <g>
-      {/* base */}
-      <polygon points="0,-16 30,-1 0,14 -30,-1" fill="#3a6f68" />
-      <polygon points="-30,-1 0,14 0,24 -30,9" fill="#2c554f" />
-      <polygon points="30,-1 0,14 0,24 30,9" fill="#346159" />
-      {/* back cushion */}
-      <polygon points="-30,-1 0,-16 0,-30 -30,-15" fill="#41817a" />
-      {/* seat cushions */}
-      <ellipse cx="-9" cy="-3" rx="9" ry="4.5" fill="#4d948c" />
-      <ellipse cx="9" cy="-3" rx="9" ry="4.5" fill="#4d948c" />
+      {/* base block */}
+      <polygon points="0,-14 30,1 0,16 -30,1" fill="#3f7a72" />
+      <polygon points="-30,1 0,16 0,24 -30,9" fill="#2c554f" />
+      <polygon points="30,1 0,16 0,24 30,9" fill="#346159" />
+      {/* back block */}
+      <polygon points="-30,1 0,-14 0,-28 -30,-13" fill="#4d948c" />
+      {/* seat cushions (blocks) */}
+      <rect x="-18" y="-6" width="14" height="7" fill="#56a59c" />
+      <rect x="4" y="-6" width="14" height="7" fill="#56a59c" />
     </g>
   );
 }
@@ -470,14 +509,15 @@ function Sofa() {
 function Plant() {
   return (
     <g>
-      {/* pot */}
+      {/* pot block */}
       <polygon points="-9,2 9,2 6,16 -6,16" fill="#b5613b" />
-      <ellipse cx="0" cy="2" rx="9" ry="3.5" fill="#cf7048" />
-      {/* foliage */}
-      <circle cx="0" cy="-12" r="11" fill="#2f8f4e" />
-      <circle cx="-7" cy="-6" r="8" fill="#37a85b" />
-      <circle cx="7" cy="-7" r="8" fill="#2b8047" />
-      <circle cx="0" cy="-18" r="7" fill="#3cb863" />
+      <polygon points="-9,2 -6,16 6,16 9,2" fill="#a0542f" opacity="0.4" />
+      <rect x="-9" y="0" width="18" height="3" fill="#cf7048" />
+      {/* blocky foliage (stacked squares) */}
+      <rect x="-10" y="-10" width="20" height="12" fill="#2f8f4e" />
+      <rect x="-7" y="-18" width="14" height="10" fill="#37a85b" />
+      <rect x="-4" y="-24" width="8" height="8" fill="#3cb863" />
+      <rect x="-10" y="-10" width="20" height="2" fill="#3cb863" opacity="0.5" />
     </g>
   );
 }
@@ -485,12 +525,12 @@ function Plant() {
 function Cooler() {
   return (
     <g>
-      {/* stand */}
-      <polygon points="-8,4 8,4 6,22 -6,22" fill="#dfe6ee" />
-      <polygon points="-8,4 -6,22 -6,22 -8,4" fill="#c4ccd6" />
-      {/* bottle */}
-      <rect x="-7" y="-14" width="14" height="18" rx="3" fill="#7fc7ff" opacity="0.85" />
-      <rect x="-5" y="-12" width="10" height="14" rx="2" fill="#a8dbff" opacity="0.7" />
+      {/* stand block */}
+      <rect x="-8" y="4" width="16" height="18" fill="#cdd5df" />
+      <rect x="-8" y="4" width="4" height="18" fill="#aab3bf" />
+      {/* bottle block */}
+      <rect x="-7" y="-14" width="14" height="18" fill="#7fc7ff" />
+      <rect x="-7" y="-14" width="4" height="18" fill="#a8dbff" />
     </g>
   );
 }
