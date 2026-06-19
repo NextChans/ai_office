@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useOffice, useCurrentCompany } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
+import { useAIStatus } from "@/lib/ai/client";
+import { AuthButton } from "@/components/AuthButton";
 
 const links = [
   { href: "/", label: "홈" },
@@ -16,6 +18,7 @@ export function NavBar() {
   const company = useCurrentCompany();
   const currentCompanyId = useOffice((s) => s.currentCompanyId);
   const inWorkspace = pathname.startsWith("/c/");
+  const ai = useAIStatus();
 
   return (
     <header className="sticky top-0 z-50 glass">
@@ -42,26 +45,37 @@ export function NavBar() {
             </Link>
           )}
         </div>
-        <ul className="flex items-center gap-1 text-sm">
-          {links.map((l) => {
-            const active =
-              l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
-            return (
-              <li key={l.href}>
-                <Link
-                  href={l.href}
-                  className={`rounded-lg px-3 py-1.5 transition-colors ${
-                    active
-                      ? "bg-accent/20 text-accent"
-                      : "text-muted hover:bg-panel-2 hover:text-text"
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="flex items-center gap-2">
+          <ul className="flex items-center gap-1 text-sm">
+            {links.map((l) => {
+              const active =
+                l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
+              return (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    className={`rounded-lg px-3 py-1.5 transition-colors ${
+                      active
+                        ? "bg-accent/20 text-accent"
+                        : "text-muted hover:bg-panel-2 hover:text-text"
+                    }`}
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          {ai.configured && (
+            <span
+              className="hidden items-center gap-1 rounded-full border border-accent-2/40 bg-accent-2/10 px-2 py-1 text-[11px] text-accent-2 sm:flex"
+              title={`Claude 연동 활성 (${ai.mode === "oauth" ? "구독" : "API 키"})`}
+            >
+              🤖 AI
+            </span>
+          )}
+          <AuthButton />
+        </div>
       </nav>
     </header>
   );

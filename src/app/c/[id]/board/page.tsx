@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useOffice } from "@/lib/store";
 import { toast } from "@/components/ui/toast";
+import { summarizeProposal } from "@/lib/ai/client";
+import { Badge } from "@/components/ui";
 import type { VoteChoice } from "@/lib/types";
 
 export default function BoardPage() {
@@ -95,6 +97,12 @@ export default function BoardPage() {
                             대상: {target.avatar} {target.name}
                           </p>
                         )}
+                        <ProposalAISummary
+                          description={p.description}
+                          kind={p.kind}
+                          forCount={forCount}
+                          againstCount={againstCount}
+                        />
                       </div>
                       <div className="text-right text-xs text-muted">
                         <div className="text-accent-2">찬성 {forCount}</div>
@@ -144,6 +152,54 @@ export default function BoardPage() {
       })}
 
       <NewMeeting companyId={id} />
+    </div>
+  );
+}
+
+function ProposalAISummary({
+  description,
+  kind,
+  forCount,
+  againstCount,
+}: {
+  description: string;
+  kind: string;
+  forCount: number;
+  againstCount: number;
+}) {
+  const [text, setText] = useState<string | null>(null);
+  const [fromAI, setFromAI] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const run = async () => {
+    setLoading(true);
+    try {
+      const r = await summarizeProposal({ description, kind, forCount, againstCount });
+      setText(r.text);
+      setFromAI(r.fromAI);
+    } catch {
+      setText("요약을 가져오지 못했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-2">
+      {!text ? (
+        <button
+          onClick={run}
+          disabled={loading}
+          className="rounded-md border border-accent/40 bg-accent/10 px-2.5 py-1 text-xs text-accent focus-ring disabled:opacity-60"
+        >
+          {loading ? "요약 중…" : "🤖 AI 요약·권고"}
+        </button>
+      ) : (
+        <div className="rounded-lg border border-accent/30 bg-accent/5 p-2.5 text-xs text-muted">
+          <span className="mr-1 font-semibold text-accent">AI</span>
+          {!fromAI && <Badge tone="neutral">휴리스틱</Badge>} {text}
+        </div>
+      )}
     </div>
   );
 }
