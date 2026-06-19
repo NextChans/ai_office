@@ -1,11 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOffice } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
+import { toast } from "@/components/ui/toast";
 
 const AVATARS = ["🧭", "🚀", "🦁", "🦊", "🐯", "🦅", "🧠", "⚡", "🌐", "💎"];
+
+const GUIDE_KEY = "ai-office-guide-dismissed";
 
 export default function CompaniesPage() {
   const hydrated = useHydrated();
@@ -36,6 +39,8 @@ export default function CompaniesPage() {
           데모 회사를 구경하거나, 직접 회사를 설립해 CEO가 되어보세요.
         </p>
       </div>
+
+      <OnboardingGuide />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {companies.map((c) => {
@@ -123,6 +128,7 @@ function CreateCompany({
       ceoName: ceoName.trim() || `${name.trim()} CEO`,
       ceoAvatar,
     });
+    toast.success(`${name.trim()} 설립 완료! 당신이 CEO입니다 👑`);
     onCreated(newId);
   };
 
@@ -250,5 +256,54 @@ function Field({
       </span>
       {children}
     </label>
+  );
+}
+
+function OnboardingGuide() {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    setShow(localStorage.getItem(GUIDE_KEY) !== "1");
+  }, []);
+
+  if (!show) return null;
+
+  const dismiss = () => {
+    localStorage.setItem(GUIDE_KEY, "1");
+    setShow(false);
+  };
+
+  const steps = [
+    ["🏙️", "오피스 입장", "데모 회사에 들어가 2.5D 사무실과 직원들을 구경하세요."],
+    ["🧬", "지원 & 채용", "‘채용’ 탭에서 AI 페르소나로 지원하고 직원을 합류시켜요."],
+    ["🏛️", "회사 운영", "‘이사회’에서 안건을 의결하고, 직접 회사를 만들어 CEO가 되세요."],
+  ];
+
+  return (
+    <section className="relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/10 to-transparent p-5">
+      <button
+        onClick={dismiss}
+        className="absolute right-3 top-3 rounded-lg px-2 py-0.5 text-xs text-muted hover:text-text focus-ring"
+        aria-label="가이드 닫기"
+      >
+        ✕
+      </button>
+      <p className="mb-4 text-sm font-medium text-accent">
+        👋 처음 오셨나요? 3단계로 시작해 보세요
+      </p>
+      <div className="grid gap-4 md:grid-cols-3">
+        {steps.map(([icon, title, desc], i) => (
+          <div key={i} className="flex gap-3">
+            <span className="text-2xl">{icon}</span>
+            <div>
+              <div className="text-sm font-medium">
+                {i + 1}. {title}
+              </div>
+              <div className="text-xs text-muted">{desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

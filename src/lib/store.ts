@@ -53,6 +53,11 @@ interface OfficeState {
   // Companies
   createCompany: (input: CreateCompanyInput) => string;
   setCurrentCompany: (id: string) => void;
+  updateCompany: (
+    id: string,
+    patch: Partial<Pick<Company, "name" | "mission" | "industry">>
+  ) => void;
+  deleteCompany: (id: string) => void;
 
   // Personas & applications
   addPersona: (p: Omit<Persona, "id">) => string;
@@ -144,6 +149,30 @@ export const useOffice = create<OfficeState>()(
       },
 
       setCurrentCompany: (id) => set({ currentCompanyId: id }),
+
+      updateCompany: (id, patch) =>
+        set((s) => ({
+          companies: s.companies.map((c) =>
+            c.id === id ? { ...c, ...patch } : c
+          ),
+        })),
+
+      deleteCompany: (id) =>
+        set((s) => {
+          const companies = s.companies.filter((c) => c.id !== id);
+          const fallback =
+            companies.find((c) => c.isDemo)?.id ?? companies[0]?.id ?? "";
+          return {
+            companies,
+            currentCompanyId:
+              s.currentCompanyId === id ? fallback : s.currentCompanyId,
+            agents: s.agents.filter((a) => a.companyId !== id),
+            applications: s.applications.filter((a) => a.companyId !== id),
+            actions: s.actions.filter((a) => a.companyId !== id),
+            meetings: s.meetings.filter((m) => m.companyId !== id),
+            proposals: s.proposals.filter((p) => p.companyId !== id),
+          };
+        }),
 
       addPersona: (p) => {
         const id = uid("persona");

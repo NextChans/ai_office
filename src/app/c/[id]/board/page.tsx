@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useOffice } from "@/lib/store";
+import { toast } from "@/components/ui/toast";
 import type { VoteChoice } from "@/lib/types";
 
 export default function BoardPage() {
@@ -120,8 +121,15 @@ export default function BoardPage() {
                           ))}
                         </div>
                         <button
-                          onClick={() => resolveProposal(p.id)}
-                          className="mt-2 self-start rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white"
+                          onClick={() => {
+                            const f = Object.values(p.votes).filter((v) => v === "for").length;
+                            const ag = Object.values(p.votes).filter((v) => v === "against").length;
+                            resolveProposal(p.id);
+                            toast[f > ag ? "success" : "warn"](
+                              f > ag ? "안건이 가결되었습니다 ✅" : "안건이 부결되었습니다."
+                            );
+                          }}
+                          className="mt-2 self-start rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white focus-ring"
                         >
                           안건 의결
                         </button>
@@ -204,6 +212,7 @@ function NewMeeting({ companyId }: { companyId: string }) {
               onClick={() => {
                 if (!title) return;
                 createMeeting(companyId, title, agenda);
+                toast.success("새 이사회를 소집했습니다.");
                 setTitle("");
                 setAgenda("");
                 setOpen(false);
