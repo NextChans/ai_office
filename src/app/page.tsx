@@ -45,18 +45,22 @@ export default function Home() {
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Link
-            href="/office"
+            href="/companies"
             className="rounded-xl bg-accent px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5"
           >
-            오피스 둘러보기
+            회사 만들기 / 둘러보기
           </Link>
           <Link
-            href="/apply"
+            href="/office"
             className="rounded-xl border border-border bg-panel px-6 py-3 font-medium transition-colors hover:bg-panel-2"
           >
-            입사지원 하기
+            데모 오피스 구경하기
           </Link>
         </div>
+        <p className="mt-4 text-xs text-muted">
+          처음이신가요? 데모 회사 <span className="text-accent-2">Nexus Labs</span>{" "}
+          에서 바로 둘러볼 수 있습니다.
+        </p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

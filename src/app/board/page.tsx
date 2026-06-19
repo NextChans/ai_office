@@ -1,20 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { useOffice } from "@/lib/store";
+import { useMemo, useState } from "react";
+import { useOffice, useCurrentCompany } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import type { VoteChoice } from "@/lib/types";
 
 export default function BoardPage() {
   const hydrated = useHydrated();
-  const company = useOffice((s) => s.company);
-  const agents = useOffice((s) => s.agents);
-  const meetings = useOffice((s) => s.meetings);
+  const company = useCurrentCompany();
+  const allAgents = useOffice((s) => s.agents);
+  const allMeetings = useOffice((s) => s.meetings);
   const proposals = useOffice((s) => s.proposals);
   const castVote = useOffice((s) => s.castVote);
   const resolveProposal = useOffice((s) => s.resolveProposal);
 
+  const cid = company?.id;
+  const agents = useMemo(
+    () => allAgents.filter((a) => a.companyId === cid),
+    [allAgents, cid]
+  );
+  const meetings = useMemo(
+    () => allMeetings.filter((m) => m.companyId === cid),
+    [allMeetings, cid]
+  );
+
   if (!hydrated) return null;
+  if (!company) {
+    return <div className="py-20 text-center text-muted">회사를 찾을 수 없습니다.</div>;
+  }
 
   const ceo = agents.find((a) => a.id === company.ceoAgentId);
   const boardMembers = agents.filter(
@@ -171,11 +184,13 @@ function VoteButtons({
 }
 
 function NewProposal() {
-  const agents = useOffice((s) => s.agents);
-  const proposals = useOffice((s) => s.proposals);
-  const meetings = useOffice((s) => s.meetings);
+  const company = useCurrentCompany();
+  const allAgents = useOffice((s) => s.agents);
+  const allMeetings = useOffice((s) => s.meetings);
   const createMeeting = useOffice((s) => s.createMeeting);
-  // We append proposals via the store by reusing meeting+proposal creation.
+  const cid = company?.id;
+  const agents = allAgents.filter((a) => a.companyId === cid);
+  const meetings = allMeetings.filter((m) => m.companyId === cid);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [agenda, setAgenda] = useState("");
@@ -207,8 +222,8 @@ function NewProposal() {
           <div className="flex gap-2">
             <button
               onClick={() => {
-                if (!title) return;
-                createMeeting(title, agenda);
+                if (!title || !cid) return;
+                createMeeting(cid, title, agenda);
                 setTitle("");
                 setAgenda("");
                 setOpen(false);
@@ -225,8 +240,8 @@ function NewProposal() {
             </button>
           </div>
           <p className="text-xs text-muted">
-            현재 {agents.length}명의 에이전트, {proposals.length}개의 안건,{" "}
-            {meetings.length}회의 이사회가 등록되어 있습니다.
+            현재 {agents.length}명의 에이전트, {meetings.length}회의 이사회가
+            등록되어 있습니다.
           </p>
         </div>
       )}

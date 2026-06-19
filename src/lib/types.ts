@@ -29,6 +29,7 @@ export interface Persona {
 /** A job application submitted by a persona. */
 export interface Application {
   id: string;
+  companyId: string;
   personaId: string;
   department: Department;
   role: Role;
@@ -40,6 +41,7 @@ export interface Application {
 /** A hired AI agent that lives and works on the office floor. */
 export interface Agent {
   id: string;
+  companyId: string;
   personaId: string;
   name: string;
   avatar: string;
@@ -57,6 +59,7 @@ export interface Agent {
 /** An action an agent proposes to take, gated by owner approval. */
 export interface AgentAction {
   id: string;
+  companyId: string;
   agentId: string;
   title: string;
   detail: string;
@@ -67,6 +70,7 @@ export interface AgentAction {
 /** A board meeting record for company governance. */
 export interface BoardMeeting {
   id: string;
+  companyId: string;
   title: string;
   agenda: string;
   createdAt: number;
@@ -77,6 +81,7 @@ export type VoteChoice = "for" | "against" | "abstain";
 
 export interface BoardProposal {
   id: string;
+  companyId: string;
   meetingId: string;
   kind: "replace_ceo" | "promote" | "custom";
   description: string;
@@ -87,8 +92,12 @@ export interface BoardProposal {
 }
 
 export interface Company {
+  id: string;
   name: string;
   mission: string;
+  ownerName: string; // human who founded the company
   ceoAgentId: string | null;
   foundedAt: number;
+  isDemo?: boolean; // onboarding/demo company for newcomers to explore
+  industry?: string;
 }

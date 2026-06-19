@@ -19,7 +19,11 @@ export default function ApplyPage() {
   const router = useRouter();
   const addPersona = useOffice((s) => s.addPersona);
   const applyForJob = useOffice((s) => s.applyForJob);
+  const setCurrentCompany = useOffice((s) => s.setCurrentCompany);
+  const companies = useOffice((s) => s.companies);
+  const currentCompanyId = useOffice((s) => s.currentCompanyId);
 
+  const [companyId, setCompanyId] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState(AVATARS[0]);
@@ -32,8 +36,11 @@ export default function ApplyPage() {
 
   if (!hydrated) return null;
 
+  const targetCompanyId = companyId || currentCompanyId || companies[0]?.id;
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!targetCompanyId) return;
     const personaId = addPersona({
       ownerName: ownerName || "익명",
       name,
@@ -46,11 +53,13 @@ export default function ApplyPage() {
       bio,
     });
     applyForJob({
+      companyId: targetCompanyId,
       personaId,
       department,
       role: "Member" as Role,
       message,
     });
+    setCurrentCompany(targetCompanyId);
     setDone(true);
   };
 
@@ -98,6 +107,21 @@ export default function ApplyPage() {
         onSubmit={submit}
         className="mt-8 flex flex-col gap-5 rounded-2xl border border-border bg-panel p-6"
       >
+        <Field label="지원할 회사" required>
+          <select
+            value={targetCompanyId}
+            onChange={(e) => setCompanyId(e.target.value)}
+            className="input"
+          >
+            {companies.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+                {c.isDemo ? " (데모)" : ""}
+              </option>
+            ))}
+          </select>
+        </Field>
+
         <Field label="소유자 이름 (당신)">
           <input
             value={ownerName}
