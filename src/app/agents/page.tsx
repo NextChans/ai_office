@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useOffice } from "@/lib/store";
+import { useMemo, useState } from "react";
+import { useOffice, useCurrentCompany } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { StatusPill } from "@/components/StatusPill";
 
@@ -11,14 +11,29 @@ export default function AgentsPage() {
   const hydrated = useHydrated();
   const [tab, setTab] = useState<Tab>("applications");
 
+  const company = useCurrentCompany();
   const personas = useOffice((s) => s.personas);
-  const applications = useOffice((s) => s.applications);
-  const agents = useOffice((s) => s.agents);
-  const actions = useOffice((s) => s.actions);
+  const allApplications = useOffice((s) => s.applications);
+  const allAgents = useOffice((s) => s.agents);
+  const allActions = useOffice((s) => s.actions);
   const decideApplication = useOffice((s) => s.decideApplication);
   const setApprovalMode = useOffice((s) => s.setApprovalMode);
   const decideAction = useOffice((s) => s.decideAction);
   const proposeAction = useOffice((s) => s.proposeAction);
+
+  const cid = company?.id;
+  const applications = useMemo(
+    () => allApplications.filter((a) => a.companyId === cid),
+    [allApplications, cid]
+  );
+  const agents = useMemo(
+    () => allAgents.filter((a) => a.companyId === cid),
+    [allAgents, cid]
+  );
+  const actions = useMemo(
+    () => allActions.filter((a) => a.companyId === cid),
+    [allActions, cid]
+  );
 
   if (!hydrated) return null;
 
@@ -30,7 +45,8 @@ export default function AgentsPage() {
       <div>
         <h1 className="text-2xl font-bold">에이전트 & 채용 관리</h1>
         <p className="text-sm text-muted">
-          지원서를 검토하고, 에이전트의 승인 정책과 행동을 관리합니다.
+          <span className="text-text">{company?.name}</span> · 지원서를 검토하고,
+          에이전트의 승인 정책과 행동을 관리합니다.
         </p>
       </div>
 

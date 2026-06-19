@@ -8,12 +8,20 @@ import type {
   Persona,
 } from "./types";
 
-export const seedCompany: Company = {
-  name: "Nexus Labs",
-  mission: "AI 에이전트들이 자율적으로 협업하는 가상의 회사를 만든다.",
-  ceoAgentId: "agent-ceo",
-  foundedAt: Date.now() - 1000 * 60 * 60 * 24 * 30,
-};
+export const DEMO_COMPANY_ID = "company-demo";
+
+export const seedCompanies: Company[] = [
+  {
+    id: DEMO_COMPANY_ID,
+    name: "Nexus Labs",
+    mission: "AI 에이전트들이 자율적으로 협업하는 가상의 회사를 만든다.",
+    ownerName: "AI Office Team",
+    ceoAgentId: "agent-ceo",
+    foundedAt: Date.now() - 1000 * 60 * 60 * 24 * 30,
+    isDemo: true,
+    industry: "AI 플랫폼",
+  },
+];
 
 export const seedPersonas: Persona[] = [
   {
@@ -57,6 +65,7 @@ export const seedPersonas: Persona[] = [
 export const seedAgents: Agent[] = [
   {
     id: "agent-ceo",
+    companyId: DEMO_COMPANY_ID,
     personaId: "persona-ceo",
     name: "Atlas",
     avatar: "🧭",
@@ -71,6 +80,7 @@ export const seedAgents: Agent[] = [
   },
   {
     id: "agent-cto",
+    companyId: DEMO_COMPANY_ID,
     personaId: "persona-cto",
     name: "Vector",
     avatar: "🛠️",
@@ -85,6 +95,7 @@ export const seedAgents: Agent[] = [
   },
   {
     id: "agent-design",
+    companyId: DEMO_COMPANY_ID,
     personaId: "persona-design",
     name: "Iris",
     avatar: "🎨",
@@ -99,6 +110,7 @@ export const seedAgents: Agent[] = [
   },
   {
     id: "agent-growth",
+    companyId: DEMO_COMPANY_ID,
     personaId: "persona-growth",
     name: "Echo",
     avatar: "📣",
@@ -116,6 +128,7 @@ export const seedAgents: Agent[] = [
 export const seedActions: AgentAction[] = [
   {
     id: "action-1",
+    companyId: DEMO_COMPANY_ID,
     agentId: "agent-cto",
     title: "프로덕션 DB 마이그레이션 실행",
     detail: "users 테이블에 approval_mode 컬럼을 추가합니다.",
@@ -124,6 +137,7 @@ export const seedActions: AgentAction[] = [
   },
   {
     id: "action-2",
+    companyId: DEMO_COMPANY_ID,
     agentId: "agent-growth",
     title: "런칭 트윗 발행",
     detail: "오피스 베타 오픈을 알리는 공개 게시물을 발행합니다.",
@@ -132,6 +146,7 @@ export const seedActions: AgentAction[] = [
   },
   {
     id: "action-3",
+    companyId: DEMO_COMPANY_ID,
     agentId: "agent-design",
     title: "디자인 시스템 v2 머지",
     detail: "새 토큰 팔레트를 메인 브랜치에 반영합니다.",
@@ -143,6 +158,7 @@ export const seedActions: AgentAction[] = [
 export const seedApplications: Application[] = [
   {
     id: "app-1",
+    companyId: DEMO_COMPANY_ID,
     personaId: "persona-growth",
     department: "Marketing",
     role: "Member",
@@ -155,6 +171,7 @@ export const seedApplications: Application[] = [
 export const seedMeetings: BoardMeeting[] = [
   {
     id: "meeting-1",
+    companyId: DEMO_COMPANY_ID,
     title: "2026 Q2 정기 이사회",
     agenda: "CEO 신임 평가 및 CTO 승진 안건",
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2,
@@ -165,6 +182,7 @@ export const seedMeetings: BoardMeeting[] = [
 export const seedProposals: BoardProposal[] = [
   {
     id: "proposal-1",
+    companyId: DEMO_COMPANY_ID,
     meetingId: "meeting-1",
     kind: "promote",
     description: "Vector(CTO)를 Executive 의결권 멤버로 승진",

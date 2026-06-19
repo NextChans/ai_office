@@ -1,21 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { OfficeFloor } from "@/components/OfficeFloor";
-import { useOffice } from "@/lib/store";
+import { useOffice, useCurrentCompany } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { StatusPill } from "@/components/StatusPill";
 
 export default function OfficePage() {
   const hydrated = useHydrated();
-  const company = useOffice((s) => s.company);
-  const agents = useOffice((s) => s.agents);
-  const actions = useOffice((s) => s.actions);
+  const company = useCurrentCompany();
+  const allAgents = useOffice((s) => s.agents);
+  const allActions = useOffice((s) => s.actions);
   const decideAction = useOffice((s) => s.decideAction);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const agents = useMemo(
+    () => allAgents.filter((a) => a.companyId === company?.id),
+    [allAgents, company?.id]
+  );
+  const actions = useMemo(
+    () => allActions.filter((a) => a.companyId === company?.id),
+    [allActions, company?.id]
+  );
+
   if (!hydrated) {
     return <div className="py-20 text-center text-muted">오피스를 불러오는 중…</div>;
+  }
+
+  if (!company) {
+    return (
+      <div className="py-20 text-center text-muted">
+        회사를 찾을 수 없습니다.
+      </div>
+    );
   }
 
   const selected = agents.find((a) => a.id === selectedId) ?? null;
@@ -27,7 +44,14 @@ export default function OfficePage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{company.name} 오피스</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-bold">
+            {company.name} 오피스
+            {company.isDemo && (
+              <span className="rounded-full border border-accent/40 bg-accent/15 px-2 py-0.5 text-xs font-normal text-accent">
+                데모
+              </span>
+            )}
+          </h1>
           <p className="text-sm text-muted">{company.mission}</p>
         </div>
         <div className="flex gap-4 text-sm">

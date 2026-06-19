@@ -40,9 +40,15 @@ export function OfficeFloor({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const agents = useOffice((s) => s.agents);
+  const allAgents = useOffice((s) => s.agents);
+  const currentCompanyId = useOffice((s) => s.currentCompanyId);
   const moveAgent = useOffice((s) => s.moveAgent);
   const [tick, setTick] = useState(0);
+
+  const agents = useMemo(
+    () => allAgents.filter((a) => a.companyId === currentCompanyId),
+    [allAgents, currentCompanyId]
+  );
 
   // Gentle autonomous wandering to make the office feel alive.
   useEffect(() => {
