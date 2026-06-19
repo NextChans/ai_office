@@ -6,6 +6,7 @@ import { useOffice, useCurrentCompany } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 import { useAIStatus } from "@/lib/ai/client";
 import { AuthButton } from "@/components/AuthButton";
+import { PixelIcon } from "@/components/PixelIcon";
 
 const links = [
   { href: "/", label: "홈" },
@@ -25,7 +26,7 @@ export function NavBar() {
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <span className="text-xl">🏢</span>
+            <PixelIcon name="logo" size={20} className="text-accent" />
             <span>
               AI<span className="text-accent">Office</span>
             </span>

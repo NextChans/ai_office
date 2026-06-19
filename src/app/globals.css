@@ -84,13 +84,30 @@ a {
   image-rendering: pixelated;
 }
 
-/* Square off the rounded utilities so the whole app reads as blocky.
-   (Plain rules override Tailwind's layered utilities; pills stay round.) */
+/* Recessed (inset) bevel for inputs — looks "carved in" vs raised buttons. */
+.pixel-input {
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--panel-2);
+  color: var(--text);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.35);
+}
+.pixel-input::placeholder {
+  color: var(--muted);
+}
+.pixel-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  border-color: var(--accent);
+}
+
+/* Square off ALL rounded utilities so the whole app reads as blocky. */
 .rounded-md,
 .rounded-lg,
 .rounded-xl,
 .rounded-2xl,
-.rounded-3xl {
+.rounded-3xl,
+.rounded-full {
   border-radius: 2px;
 }
 

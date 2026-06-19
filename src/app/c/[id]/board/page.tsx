@@ -254,14 +254,14 @@ function NewMeeting({ companyId }: { companyId: string }) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="이사회 제목 (예: 2026 Q3 정기 이사회)"
-            className="rounded-lg border border-border bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent"
+            className="pixel-input px-3 py-2 text-sm outline-none"
           />
           <textarea
             value={agenda}
             onChange={(e) => setAgenda(e.target.value)}
             rows={2}
             placeholder="안건을 입력하세요"
-            className="resize-none rounded-lg border border-border bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent"
+            className="pixel-input resize-none px-3 py-2 text-sm outline-none"
           />
           <div className="flex gap-2">
             <button

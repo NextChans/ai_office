@@ -230,15 +230,17 @@ function CreateCompany({
       <style jsx global>{`
         .cinput {
           width: 100%;
-          border-radius: 0.625rem;
-          border: 1px solid var(--border);
+          border-radius: 0;
+          border: 2px solid var(--ink);
           background: var(--panel-2);
-          padding: 0.625rem 0.75rem;
+          padding: 0.6rem 0.75rem;
           font-size: 0.875rem;
           color: var(--text);
           outline: none;
+          box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.35);
         }
         .cinput:focus {
+          outline: 2px solid var(--accent);
           border-color: var(--accent);
         }
       `}</style>
