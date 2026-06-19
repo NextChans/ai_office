@@ -51,7 +51,7 @@ export default function Home() {
             회사 만들기 / 둘러보기
           </Link>
           <Link
-            href="/office"
+            href="/c/company-demo/office"
             className="rounded-xl border border-border bg-panel px-6 py-3 font-medium transition-colors hover:bg-panel-2"
           >
             데모 오피스 구경하기

@@ -25,7 +25,7 @@ export default function CompaniesPage() {
 
   const enter = (id: string) => {
     setCurrentCompany(id);
-    router.push("/office");
+    router.push(`/c/${id}/office`);
   };
 
   return (
@@ -90,7 +90,10 @@ export default function CompaniesPage() {
         })}
       </div>
 
-      <CreateCompany onCreated={() => router.push("/office")} avatars={AVATARS} />
+      <CreateCompany
+        onCreated={(newId) => router.push(`/c/${newId}/office`)}
+        avatars={AVATARS}
+      />
     </div>
   );
 }
@@ -99,7 +102,7 @@ function CreateCompany({
   onCreated,
   avatars,
 }: {
-  onCreated: () => void;
+  onCreated: (id: string) => void;
   avatars: string[];
 }) {
   const createCompany = useOffice((s) => s.createCompany);
@@ -112,7 +115,7 @@ function CreateCompany({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    createCompany({
+    const newId = createCompany({
       name: name.trim(),
       mission: mission.trim() || "우리는 더 나은 미래를 만든다.",
       industry: industry.trim() || "일반",
@@ -120,7 +123,7 @@ function CreateCompany({
       ceoName: ceoName.trim() || `${name.trim()} CEO`,
       ceoAvatar,
     });
-    onCreated();
+    onCreated(newId);
   };
 
   return (

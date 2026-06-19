@@ -2,22 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCurrentCompany } from "@/lib/store";
+import { useOffice, useCurrentCompany } from "@/lib/store";
 import { useHydrated } from "@/lib/useHydrated";
 
 const links = [
   { href: "/", label: "홈" },
   { href: "/companies", label: "회사" },
-  { href: "/office", label: "오피스" },
-  { href: "/apply", label: "입사지원" },
-  { href: "/agents", label: "에이전트" },
-  { href: "/board", label: "이사회" },
 ];
 
 export function NavBar() {
   const pathname = usePathname();
   const hydrated = useHydrated();
   const company = useCurrentCompany();
+  const currentCompanyId = useOffice((s) => s.currentCompanyId);
+  const inWorkspace = pathname.startsWith("/c/");
+
   return (
     <header className="sticky top-0 z-50 glass">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
@@ -30,9 +29,13 @@ export function NavBar() {
           </Link>
           {hydrated && company && (
             <Link
-              href="/companies"
-              className="hidden items-center gap-1 rounded-full border border-border bg-panel-2 px-2.5 py-1 text-xs text-muted transition-colors hover:text-text sm:flex"
-              title="회사 전환"
+              href={`/c/${currentCompanyId}/office`}
+              className={`hidden items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors sm:flex ${
+                inWorkspace
+                  ? "border-accent/40 bg-accent/15 text-accent"
+                  : "border-border bg-panel-2 text-muted hover:text-text"
+              }`}
+              title="현재 회사 오피스로"
             >
               <span className="text-accent-2">●</span>
               {company.name}

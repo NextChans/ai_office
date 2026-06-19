@@ -1,67 +1,55 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useOffice, useCurrentCompany } from "@/lib/store";
-import { useHydrated } from "@/lib/useHydrated";
+import { useParams } from "next/navigation";
+import { useOffice } from "@/lib/store";
 import type { VoteChoice } from "@/lib/types";
 
 export default function BoardPage() {
-  const hydrated = useHydrated();
-  const company = useCurrentCompany();
+  const { id } = useParams<{ id: string }>();
+  const companies = useOffice((s) => s.companies);
   const allAgents = useOffice((s) => s.agents);
   const allMeetings = useOffice((s) => s.meetings);
   const proposals = useOffice((s) => s.proposals);
   const castVote = useOffice((s) => s.castVote);
   const resolveProposal = useOffice((s) => s.resolveProposal);
 
-  const cid = company?.id;
+  const company = companies.find((c) => c.id === id);
   const agents = useMemo(
-    () => allAgents.filter((a) => a.companyId === cid),
-    [allAgents, cid]
+    () => allAgents.filter((a) => a.companyId === id),
+    [allAgents, id]
   );
   const meetings = useMemo(
-    () => allMeetings.filter((m) => m.companyId === cid),
-    [allMeetings, cid]
+    () => allMeetings.filter((m) => m.companyId === id),
+    [allMeetings, id]
   );
 
-  if (!hydrated) return null;
-  if (!company) {
-    return <div className="py-20 text-center text-muted">회사를 찾을 수 없습니다.</div>;
-  }
-
-  const ceo = agents.find((a) => a.id === company.ceoAgentId);
+  const ceo = agents.find((a) => a.id === company?.ceoAgentId);
   const boardMembers = agents.filter(
     (a) => a.role === "CEO" || a.role === "CTO" || a.role === "Manager"
   );
-  const agentById = (id?: string) =>
-    id ? agents.find((a) => a.id === id) : undefined;
+  const agentById = (aid?: string) =>
+    aid ? agents.find((a) => a.id === aid) : undefined;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="rounded-2xl border border-border bg-gradient-to-br from-panel to-bg-soft p-6">
-        <h1 className="text-2xl font-bold">{company.name} 이사회</h1>
-        <p className="mt-1 text-sm text-muted">{company.mission}</p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <div className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3">
-            <div className="text-xs text-muted">현재 CEO</div>
-            <div className="font-semibold">
-              {ceo ? `${ceo.avatar} ${ceo.name}` : "공석"} 👑
-            </div>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap gap-3">
+        <div className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3">
+          <div className="text-xs text-muted">현재 CEO</div>
+          <div className="font-semibold">
+            {ceo ? `${ceo.avatar} ${ceo.name}` : "공석"} 👑
           </div>
-          <div className="rounded-xl border border-border bg-panel px-4 py-3">
-            <div className="text-xs text-muted">의결권 멤버</div>
-            <div className="font-semibold">{boardMembers.length}명</div>
-          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-panel px-4 py-3">
+          <div className="text-xs text-muted">의결권 멤버</div>
+          <div className="font-semibold">{boardMembers.length}명</div>
         </div>
       </div>
 
       {meetings.map((m) => {
         const items = proposals.filter((p) => p.meetingId === m.id);
         return (
-          <div
-            key={m.id}
-            className="rounded-2xl border border-border bg-panel p-6"
-          >
+          <div key={m.id} className="rounded-2xl border border-border bg-panel p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">{m.title}</h2>
               <span className="text-xs text-muted">
@@ -71,19 +59,17 @@ export default function BoardPage() {
             <p className="mt-1 text-sm text-muted">{m.agenda}</p>
 
             <div className="mt-5 flex flex-col gap-4">
+              {items.length === 0 && (
+                <p className="text-sm text-muted">등록된 안건이 없습니다.</p>
+              )}
               {items.map((p) => {
                 const target = agentById(p.targetAgentId);
-                const forCount = Object.values(p.votes).filter(
-                  (v) => v === "for"
-                ).length;
+                const forCount = Object.values(p.votes).filter((v) => v === "for").length;
                 const againstCount = Object.values(p.votes).filter(
                   (v) => v === "against"
                 ).length;
                 return (
-                  <div
-                    key={p.id}
-                    className="rounded-xl border border-border bg-panel-2 p-4"
-                  >
+                  <div key={p.id} className="rounded-xl border border-border bg-panel-2 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
@@ -149,7 +135,7 @@ export default function BoardPage() {
         );
       })}
 
-      <NewProposal />
+      <NewMeeting companyId={id} />
     </div>
   );
 }
@@ -183,14 +169,8 @@ function VoteButtons({
   );
 }
 
-function NewProposal() {
-  const company = useCurrentCompany();
-  const allAgents = useOffice((s) => s.agents);
-  const allMeetings = useOffice((s) => s.meetings);
+function NewMeeting({ companyId }: { companyId: string }) {
   const createMeeting = useOffice((s) => s.createMeeting);
-  const cid = company?.id;
-  const agents = allAgents.filter((a) => a.companyId === cid);
-  const meetings = allMeetings.filter((m) => m.companyId === cid);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [agenda, setAgenda] = useState("");
@@ -222,8 +202,8 @@ function NewProposal() {
           <div className="flex gap-2">
             <button
               onClick={() => {
-                if (!title || !cid) return;
-                createMeeting(cid, title, agenda);
+                if (!title) return;
+                createMeeting(companyId, title, agenda);
                 setTitle("");
                 setAgenda("");
                 setOpen(false);
@@ -239,10 +219,6 @@ function NewProposal() {
               취소
             </button>
           </div>
-          <p className="text-xs text-muted">
-            현재 {agents.length}명의 에이전트, {meetings.length}회의 이사회가
-            등록되어 있습니다.
-          </p>
         </div>
       )}
     </div>
@@ -251,10 +227,6 @@ function NewProposal() {
 
 function kindLabel(kind: string) {
   return (
-    {
-      replace_ceo: "CEO 교체",
-      promote: "승진",
-      custom: "일반 안건",
-    }[kind] ?? kind
+    { replace_ceo: "CEO 교체", promote: "승진", custom: "일반 안건" }[kind] ?? kind
   );
 }

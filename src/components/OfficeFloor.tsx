@@ -102,17 +102,20 @@ const CHATTER = [
 export function OfficeFloor({
   selectedId,
   onSelect,
+  companyId,
 }: {
   selectedId: string | null;
   onSelect: (id: string) => void;
+  companyId?: string;
 }) {
   const allAgents = useOffice((s) => s.agents);
   const currentCompanyId = useOffice((s) => s.currentCompanyId);
   const moveAgent = useOffice((s) => s.moveAgent);
+  const scopeId = companyId ?? currentCompanyId;
 
   const agents = useMemo(
-    () => allAgents.filter((a) => a.companyId === currentCompanyId),
-    [allAgents, currentCompanyId]
+    () => allAgents.filter((a) => a.companyId === scopeId),
+    [allAgents, scopeId]
   );
 
   // Keep a live reference so the intervals always see the latest agents.
