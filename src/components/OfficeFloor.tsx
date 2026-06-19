@@ -59,26 +59,131 @@ type Furniture =
   | { type: "plant"; x: number; y: number }
   | { type: "cooler"; x: number; y: number };
 
-const FURNITURE: Furniture[] = [
-  // Executive meeting room
-  { type: "meeting", x: 4, y: 1 },
-  // Engineering desks
-  { type: "desk", x: 1, y: 4, tint: "#2fd6b6" },
-  { type: "desk", x: 0, y: 5, tint: "#2fd6b6" },
-  { type: "desk", x: 2, y: 6, tint: "#2fd6b6" },
-  // Design desks
-  { type: "desk", x: 7, y: 4, tint: "#ffb13d" },
-  { type: "desk", x: 8, y: 5, tint: "#ffb13d" },
-  // Marketing desks
-  { type: "desk", x: 6, y: 7, tint: "#ff6b7d" },
-  { type: "desk", x: 7, y: 6, tint: "#ff6b7d" },
-  // Lounge & decor
-  { type: "sofa", x: 4, y: 6 },
-  { type: "cooler", x: 9, y: 6 },
-  { type: "plant", x: 0, y: 7 },
-  { type: "plant", x: 9, y: 0 },
-  { type: "plant", x: 9, y: 7 },
+// ── Per-company office themes (atmosphere) ──────────────────────────────────
+interface Theme {
+  name: string;
+  wallL: string;
+  wallR: string;
+  floorA: string;
+  floorB: string;
+  carpet: Partial<Record<Department, string>>;
+}
+
+const THEMES: Theme[] = [
+  {
+    name: "사이버 스튜디오",
+    wallL: "#2c2a3f", wallR: "#232133", floorA: "#262433", floorB: "#201e2b",
+    carpet: { Executive: "#3a3566", Engineering: "#1f4a45", Design: "#4d3a1c", Marketing: "#4d2630" },
+  },
+  {
+    name: "코지 우드",
+    wallL: "#3a3026", wallR: "#2e261d", floorA: "#3a2f24", floorB: "#332921",
+    carpet: { Executive: "#4a3d6a", Engineering: "#3a5a3a", Design: "#6b4f2a", Marketing: "#6b3a3a" },
+  },
+  {
+    name: "그린 캠퍼스",
+    wallL: "#243a2c", wallR: "#1d3024", floorA: "#26332a", floorB: "#202b23",
+    carpet: { Executive: "#2f5a4a", Engineering: "#2f6b3a", Design: "#5a6b2a", Marketing: "#6b5a2a" },
+  },
+  {
+    name: "미드나잇",
+    wallL: "#1f2440", wallR: "#181c33", floorA: "#1e2233", floorB: "#191d2b",
+    carpet: { Executive: "#2a3a6a", Engineering: "#1f4a55", Design: "#3a3a5a", Marketing: "#4a2a5a" },
+  },
+  {
+    name: "선셋 로프트",
+    wallL: "#3a2a32", wallR: "#2e2028", floorA: "#33262b", floorB: "#2b2024",
+    carpet: { Executive: "#5a3a4a", Engineering: "#3a5a55", Design: "#6b5030", Marketing: "#7a3a44" },
+  },
 ];
+
+// Deterministic RNG seeded from the company id (stable per company).
+function hashSeed(str: string) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function mulberry32(seed: number) {
+  let a = seed;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Generate a stable-but-varied office layout (theme + furniture) per company. */
+function generateOffice(seedStr: string): { theme: Theme; furniture: Furniture[] } {
+  const rng = mulberry32(hashSeed(seedStr || "default"));
+  const theme = THEMES[Math.floor(rng() * THEMES.length)];
+  const occupied = new Set<string>();
+  const furniture: Furniture[] = [];
+  const key = (x: number, y: number) => `${x},${y}`;
+  const inGrid = (x: number, y: number) => x >= 0 && x < GRID_W && y >= 0 && y < GRID_H;
+
+  const zoneTiles = (z: Zone) => {
+    const t: { x: number; y: number }[] = [];
+    for (let y = z.y[0]; y <= z.y[1]; y++)
+      for (let x = z.x[0]; x <= z.x[1]; x++) if (inGrid(x, y)) t.push({ x, y });
+    return t;
+  };
+  const shuffle = <T,>(arr: T[]) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+
+  // Executive: a meeting table on a random exec tile.
+  const exec = ZONES.find((z) => z.dept === "Executive");
+  if (exec) {
+    const t = shuffle(zoneTiles(exec))[0];
+    if (t) {
+      furniture.push({ type: "meeting", x: t.x, y: t.y });
+      occupied.add(key(t.x, t.y));
+    }
+  }
+
+  // Each non-exec department: a random number of desks.
+  for (const z of ZONES) {
+    if (z.dept === "Executive") continue;
+    const tiles = shuffle(zoneTiles(z)).filter((t) => !occupied.has(key(t.x, t.y)));
+    const count = 1 + Math.floor(rng() * Math.min(tiles.length, 4)); // 1..4
+    for (let i = 0; i < count && i < tiles.length; i++) {
+      const t = tiles[i];
+      furniture.push({ type: "desk", x: t.x, y: t.y, tint: z.shirt });
+      occupied.add(key(t.x, t.y));
+    }
+  }
+
+  // Decor scattered on remaining free tiles.
+  const free: { x: number; y: number }[] = [];
+  for (let y = 0; y < GRID_H; y++)
+    for (let x = 0; x < GRID_W; x++) if (!occupied.has(key(x, y))) free.push({ x, y });
+  shuffle(free);
+  let i = 0;
+  const plants = 2 + Math.floor(rng() * 4); // 2..5
+  for (let p = 0; p < plants && i < free.length; p++, i++) {
+    const t = free[i];
+    furniture.push({ type: "plant", x: t.x, y: t.y });
+  }
+  if (rng() < 0.75 && i < free.length) {
+    furniture.push({ type: "sofa", x: free[i].x, y: free[i].y });
+    i++;
+  }
+  if (rng() < 0.75 && i < free.length) {
+    furniture.push({ type: "cooler", x: free[i].x, y: free[i].y });
+    i++;
+  }
+
+  return { theme, furniture };
+}
 
 // Casual chatter shown as speech bubbles to make the office feel alive.
 const CHATTER = [
@@ -117,6 +222,9 @@ export function OfficeFloor({
     () => allAgents.filter((a) => a.companyId === scopeId),
     [allAgents, scopeId]
   );
+
+  // Per-company office atmosphere & furniture (stable per company id).
+  const { theme, furniture } = useMemo(() => generateOffice(scopeId), [scopeId]);
 
   // Keep a live reference so the intervals always see the latest agents.
   const agentsRef = useRef(agents);
@@ -210,28 +318,17 @@ export function OfficeFloor({
           className="absolute left-0 top-0"
           shapeRendering="crispEdges"
         >
-          <defs>
-            <linearGradient id="wallL" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#2c2a3f" />
-              <stop offset="1" stopColor="#222032" />
-            </linearGradient>
-            <linearGradient id="wallR" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#26243a" />
-              <stop offset="1" stopColor="#1c1b2b" />
-            </linearGradient>
-          </defs>
-
           {/* Left wall */}
           <polygon
             points={`${backCorner.x},${backCorner.y} ${leftCorner.x},${leftCorner.y} ${leftCorner.x},${leftCorner.y - WALL_H} ${backCorner.x},${backCorner.y - WALL_H}`}
-            fill="url(#wallL)"
-            stroke="#33304a"
+            fill={theme.wallL}
+            stroke="rgba(0,0,0,0.4)"
           />
           {/* Right wall */}
           <polygon
             points={`${backCorner.x},${backCorner.y} ${rightCorner.x},${rightCorner.y} ${rightCorner.x},${rightCorner.y - WALL_H} ${backCorner.x},${backCorner.y - WALL_H}`}
-            fill="url(#wallR)"
-            stroke="#33304a"
+            fill={theme.wallR}
+            stroke="rgba(0,0,0,0.4)"
           />
           {/* Windows on the walls */}
           {[0.32, 0.62].map((t, i) => {
@@ -266,7 +363,11 @@ export function OfficeFloor({
           {/* Floor tiles — each rendered as a beveled block (base + lighter top) */}
           {tiles.map(({ x, y }) => {
             const zone = zoneFor(x, y);
-            const base = zone ? zone.carpet : (x + y) % 2 === 0 ? "#262433" : "#201e2b";
+            const base = zone
+              ? theme.carpet[zone.dept] ?? theme.floorA
+              : (x + y) % 2 === 0
+                ? theme.floorA
+                : theme.floorB;
             const top = shade(base, 0.22);
             const ccx = cx(x, y);
             const ccy = cy(x, y);
@@ -288,7 +389,7 @@ export function OfficeFloor({
           })}
 
           {/* Furniture (painter's order: back to front) */}
-          {[...FURNITURE]
+          {[...furniture]
             .sort((a, b) => a.x + a.y - (b.x + b.y))
             .map((f, i) => (
               <g key={i} transform={`translate(${cx(f.x, f.y)},${cy(f.x, f.y)})`}>
@@ -333,6 +434,9 @@ export function OfficeFloor({
 
       {/* Legend */}
       <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-xs text-muted">
+        <span className="border-2 border-ink bg-panel-2 px-2 py-0.5 text-text">
+          🎨 {theme.name}
+        </span>
         {ZONES.map((z) => (
           <span key={z.dept} className="flex items-center gap-1.5">
             <span
