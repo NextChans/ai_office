@@ -1,61 +1,40 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useOffice, useCurrentCompany } from "@/lib/store";
-import { useHydrated } from "@/lib/useHydrated";
+import { useParams } from "next/navigation";
+import { useOffice } from "@/lib/store";
 import { StatusPill } from "@/components/StatusPill";
 
-type Tab = "applications" | "agents" | "actions";
+type Tab = "roster" | "actions";
 
-export default function AgentsPage() {
-  const hydrated = useHydrated();
-  const [tab, setTab] = useState<Tab>("applications");
+export default function EmployeesPage() {
+  const { id } = useParams<{ id: string }>();
+  const [tab, setTab] = useState<Tab>("roster");
 
-  const company = useCurrentCompany();
-  const personas = useOffice((s) => s.personas);
-  const allApplications = useOffice((s) => s.applications);
   const allAgents = useOffice((s) => s.agents);
   const allActions = useOffice((s) => s.actions);
-  const decideApplication = useOffice((s) => s.decideApplication);
   const setApprovalMode = useOffice((s) => s.setApprovalMode);
   const decideAction = useOffice((s) => s.decideAction);
   const proposeAction = useOffice((s) => s.proposeAction);
 
-  const cid = company?.id;
-  const applications = useMemo(
-    () => allApplications.filter((a) => a.companyId === cid),
-    [allApplications, cid]
-  );
   const agents = useMemo(
-    () => allAgents.filter((a) => a.companyId === cid),
-    [allAgents, cid]
+    () => allAgents.filter((a) => a.companyId === id),
+    [allAgents, id]
   );
   const actions = useMemo(
-    () => allActions.filter((a) => a.companyId === cid),
-    [allActions, cid]
+    () => allActions.filter((a) => a.companyId === id),
+    [allActions, id]
   );
-
-  if (!hydrated) return null;
-
-  const personaById = (id: string) => personas.find((p) => p.id === id);
-  const agentById = (id: string) => agents.find((a) => a.id === id);
+  const agentById = (aid: string) => agents.find((a) => a.id === aid);
+  const pending = actions.filter((a) => a.status === "proposed").length;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold">에이전트 & 채용 관리</h1>
-        <p className="text-sm text-muted">
-          <span className="text-text">{company?.name}</span> · 지원서를 검토하고,
-          에이전트의 승인 정책과 행동을 관리합니다.
-        </p>
-      </div>
-
+    <div className="flex flex-col gap-5">
       <div className="flex gap-1 rounded-xl border border-border bg-panel p-1 text-sm">
         {(
           [
-            ["applications", `지원서 (${applications.filter((a) => a.status === "pending").length})`],
-            ["agents", `에이전트 (${agents.length})`],
-            ["actions", `액션 (${actions.filter((a) => a.status === "proposed").length})`],
+            ["roster", `직원 (${agents.length})`],
+            ["actions", `액션 승인 (${pending})`],
           ] as [Tab, string][]
         ).map(([t, label]) => (
           <button
@@ -70,69 +49,11 @@ export default function AgentsPage() {
         ))}
       </div>
 
-      {tab === "applications" && (
-        <div className="grid gap-3">
-          {applications.length === 0 && <Empty>아직 지원서가 없습니다.</Empty>}
-          {applications.map((app) => {
-            const p = personaById(app.personaId);
-            if (!p) return null;
-            return (
-              <div
-                key={app.id}
-                className="flex flex-col gap-3 rounded-2xl border border-border bg-panel p-5 md:flex-row md:items-center md:justify-between"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="grid h-11 w-11 place-items-center rounded-full bg-panel-2 text-xl">
-                    {p.avatar}
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{p.name}</span>
-                      <span className="text-xs text-muted">@{p.ownerName}</span>
-                      <StatusPill status={appStatusToPill(app.status)} />
-                    </div>
-                    <p className="text-sm text-muted">{p.tagline}</p>
-                    <p className="mt-1 text-xs text-muted">
-                      {app.department} 지원 · “{app.message || "동기 미작성"}”
-                    </p>
-                    {p.skills.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {p.skills.map((s) => (
-                          <span
-                            key={s}
-                            className="rounded-full border border-border bg-panel-2 px-2 py-0.5 text-[11px] text-muted"
-                          >
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {app.status === "pending" && (
-                  <div className="flex shrink-0 gap-2">
-                    <button
-                      onClick={() => decideApplication(app.id, "hired")}
-                      className="rounded-lg bg-accent-2/20 px-3 py-1.5 text-sm text-accent-2"
-                    >
-                      채용
-                    </button>
-                    <button
-                      onClick={() => decideApplication(app.id, "rejected")}
-                      className="rounded-lg bg-danger/20 px-3 py-1.5 text-sm text-danger"
-                    >
-                      불합격
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {tab === "agents" && (
+      {tab === "roster" && (
         <div className="grid gap-3 md:grid-cols-2">
+          {agents.length === 0 && (
+            <Empty>아직 직원이 없습니다. 채용 탭에서 합류시켜 보세요.</Empty>
+          )}
           {agents.map((a) => (
             <div
               key={a.id}
@@ -216,9 +137,7 @@ export default function AgentsPage() {
                     <StatusPill status={act.status} />
                   </div>
                   <p className="mt-1 text-sm text-muted">{act.detail}</p>
-                  <p className="text-xs text-muted">
-                    제안자: {a?.name ?? "알 수 없음"}
-                  </p>
+                  <p className="text-xs text-muted">제안자: {a?.name ?? "—"}</p>
                 </div>
                 {act.status === "proposed" && (
                   <div className="flex shrink-0 gap-2">
@@ -251,18 +170,9 @@ export default function AgentsPage() {
   );
 }
 
-function appStatusToPill(status: string) {
-  return {
-    pending: "proposed",
-    hired: "approved",
-    rejected: "cancelled",
-    interview: "held",
-  }[status] ?? status;
-}
-
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-panel/50 py-12 text-center text-sm text-muted">
+    <div className="col-span-full rounded-2xl border border-dashed border-border bg-panel/50 py-12 text-center text-sm text-muted">
       {children}
     </div>
   );
