@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useOffice } from "@/lib/store";
+import { runMeeting } from "@/lib/ai/client";
+import { toast } from "@/components/ui/toast";
+import type { MeetingResult } from "@/lib/ai/tasks";
 import type { Agent, Department } from "@/lib/types";
 
 const GRID_W = 10;
@@ -215,6 +218,9 @@ export function OfficeFloor({
 }) {
   const allAgents = useOffice((s) => s.agents);
   const currentCompanyId = useOffice((s) => s.currentCompanyId);
+  const companies = useOffice((s) => s.companies);
+  const personas = useOffice((s) => s.personas);
+  const proposeAction = useOffice((s) => s.proposeAction);
   const moveAgent = useOffice((s) => s.moveAgent);
   const scopeId = companyId ?? currentCompanyId;
 
@@ -247,8 +253,10 @@ export function OfficeFloor({
 
   // --- Speech-bubble chatter ------------------------------------------------
   const [bubbles, setBubbles] = useState<Record<string, string>>({});
+  const meetingActiveRef = useRef(false);
   useEffect(() => {
     const t = setInterval(() => {
+      if (meetingActiveRef.current) return; // pause idle chatter during a meeting
       const list = agentsRef.current;
       if (list.length === 0) return;
       const a = list[Math.floor(Math.random() * list.length)];
@@ -264,6 +272,97 @@ export function OfficeFloor({
     }, 2100);
     return () => clearInterval(t);
   }, []);
+
+  // --- Autonomous AI meeting -------------------------------------------------
+  const [meeting, setMeeting] = useState<{
+    running: boolean;
+    transcript: { name: string; message: string }[];
+    summary: string;
+    actions: MeetingResult["actions"];
+    fromAI: boolean;
+  } | null>(null);
+  const timersRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach((id) => window.clearTimeout(id));
+      meetingActiveRef.current = false;
+    };
+  }, []);
+
+  const startMeeting = async () => {
+    if (meeting?.running) return;
+    const roster = agentsRef.current;
+    if (roster.length === 0) {
+      toast.warn("회의를 열 직원이 없습니다.");
+      return;
+    }
+    timersRef.current.forEach((id) => window.clearTimeout(id));
+    timersRef.current = [];
+    meetingActiveRef.current = true;
+    setBubbles({});
+    setMeeting({ running: true, transcript: [], summary: "", actions: [], fromAI: false });
+
+    const company = companies.find((c) => c.id === scopeId);
+    try {
+      const result = await runMeeting({
+        company: company?.name ?? "회사",
+        topic: "이번 주 우선순위와 다음 액션",
+        agents: roster.map((a) => {
+          const p = personas.find((pp) => pp.id === a.personaId);
+          return {
+            name: a.name,
+            role: a.role,
+            department: a.department,
+            tagline: p?.tagline ?? "",
+            skills: p?.skills ?? [],
+          };
+        }),
+      });
+
+      const byName = (n: string) => roster.find((a) => a.name === n);
+      // Play turns sequentially as speech bubbles + grow the transcript.
+      result.turns.forEach((turn, i) => {
+        const at = window.setTimeout(() => {
+          const ag = byName(turn.name);
+          if (ag) {
+            setBubbles({ [ag.id]: turn.message });
+          }
+          setMeeting((m) => (m ? { ...m, transcript: [...m.transcript, turn] } : m));
+        }, i * 2600);
+        timersRef.current.push(at);
+      });
+
+      const end = window.setTimeout(() => {
+        setBubbles({});
+        meetingActiveRef.current = false;
+        setMeeting((m) =>
+          m
+            ? { ...m, running: false, summary: result.summary, actions: result.actions, fromAI: result.fromAI }
+            : m
+        );
+      }, result.turns.length * 2600 + 800);
+      timersRef.current.push(end);
+    } catch {
+      meetingActiveRef.current = false;
+      setMeeting(null);
+      toast.error("회의 생성에 실패했습니다.");
+    }
+  };
+
+  const registerActions = () => {
+    if (!meeting) return;
+    let n = 0;
+    for (const act of meeting.actions) {
+      const ag = agentsRef.current.find((a) => a.name === act.agentName);
+      if (ag) {
+        proposeAction(ag.id, act.title, act.detail);
+        n++;
+      }
+    }
+    toast.success(`회의 액션 ${n}건을 등록했습니다.`);
+    setMeeting((m) => (m ? { ...m, actions: [] } : m));
+  };
 
   // Scale the fixed-size board to fit narrow viewports (mobile) — no scroll.
   const frameRef = useRef<HTMLDivElement>(null);
@@ -297,6 +396,15 @@ export function OfficeFloor({
       ref={frameRef}
       className="pixel-panel relative overflow-hidden bg-[#13111a] p-3 md:p-6"
     >
+      <button
+        onClick={startMeeting}
+        disabled={meeting?.running}
+        className="pixel-btn absolute right-3 top-3 z-30 bg-accent px-3 py-1.5 text-xs font-medium text-ink disabled:opacity-60"
+        title="에이전트들이 실제로 대화하는 자율 회의를 시작합니다"
+      >
+        {meeting?.running ? "회의 중…" : "🗣️ 자율 회의"}
+      </button>
+
       <div
         className="relative mx-auto"
         style={{ width: BOARD_W * scale, height: BOARD_H * scale }}
@@ -447,6 +555,42 @@ export function OfficeFloor({
           </span>
         ))}
       </div>
+
+      {/* Meeting transcript / outcome */}
+      {meeting && (meeting.transcript.length > 0 || meeting.running) && (
+        <div className="mt-4 border-2 border-ink bg-panel-2 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+            🗣️ 자율 회의
+            {meeting.running && <span className="text-xs text-muted">진행 중…</span>}
+            {!meeting.running && !meeting.fromAI && meeting.summary && (
+              <span className="border-2 border-border px-1.5 text-[10px] text-muted">
+                예시(AI 미연동)
+              </span>
+            )}
+          </div>
+          <div className="flex max-h-56 flex-col gap-1.5 overflow-auto">
+            {meeting.transcript.map((t, i) => (
+              <div key={i} className="text-sm">
+                <span className="font-medium text-accent">{t.name}</span>{" "}
+                <span className="text-text">{t.message}</span>
+              </div>
+            ))}
+          </div>
+          {!meeting.running && meeting.summary && (
+            <div className="mt-3 border-t border-border pt-3">
+              <p className="text-xs text-muted">📋 {meeting.summary}</p>
+              {meeting.actions.length > 0 && (
+                <button
+                  onClick={registerActions}
+                  className="pixel-btn mt-3 bg-accent-2 px-3 py-1.5 text-xs font-medium text-ink"
+                >
+                  회의 액션 {meeting.actions.length}건 승인 큐에 등록
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
