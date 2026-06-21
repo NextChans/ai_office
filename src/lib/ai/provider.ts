@@ -49,10 +49,13 @@ export async function callClaude(prompt: string, opts: CallOpts = {}): Promise<s
   let system = opts.system ?? "";
 
   if (mode === "api_key") {
-    headers["x-api-key"] = process.env.ANTHROPIC_API_KEY as string;
+    headers["x-api-key"] = (process.env.ANTHROPIC_API_KEY as string).replace(/\s+/g, "");
   } else {
-    const token = (process.env.CLAUDE_OAUTH_TOKEN ||
-      process.env.CLAUDE_CODE_OAUTH_TOKEN) as string;
+    const token = (
+      process.env.CLAUDE_OAUTH_TOKEN ||
+      process.env.CLAUDE_CODE_OAUTH_TOKEN ||
+      ""
+    ).replace(/\s+/g, ""); // strip stray newlines/spaces from pasted token
     headers["authorization"] = `Bearer ${token}`;
     headers["anthropic-beta"] = OAUTH_BETA;
     // Required identity prefix for subscription OAuth tokens.
