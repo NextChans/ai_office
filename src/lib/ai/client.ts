@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { PersonaEval } from "./tasks";
+import type { PersonaEval, MeetingAgent, MeetingResult } from "./tasks";
 
 export type AIMode = "api_key" | "oauth" | "mock";
 
@@ -48,5 +48,19 @@ export async function summarizeProposal(input: {
     body: JSON.stringify(input),
   });
   if (!res.ok) throw new Error("summary failed");
+  return res.json();
+}
+
+export async function runMeeting(input: {
+  company: string;
+  topic: string;
+  agents: MeetingAgent[];
+}): Promise<MeetingResult> {
+  const res = await fetch("/api/agents/converse", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error("meeting failed");
   return res.json();
 }
